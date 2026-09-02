@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord Bot Invite Link Generator</title>
+<meta name="description" content="Generate a Discord bot OAuth2 invite link from your client ID, selected permissions, and scopes. No manual URL building required.">
+<meta name="google-site-verification" content="REPLACE_WITH_YOUR_VERIFICATION_CODE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0d0f12;
+  color: #d7dbe0;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+  padding: 24px 16px 60px 16px;
+}
+.wrap { max-width: 780px; margin: 0 auto; }
+h1 { font-size: 22px; color: #7ee787; margin-bottom: 6px; }
+.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+.panel {
+  background: #14171a;
+  border: 1px solid #2a2f36;
+  border-radius: 6px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.panel h2 { font-size: 15px; color: #58a6ff; margin-bottom: 12px; }
+label { display: block; font-size: 12px; color: #8b949e; margin: 10px 0 4px 0; }
+input[type="text"] {
+  width: 100%;
+  background: #0a0c0e;
+  border: 1px solid #2a2f36;
+  border-radius: 4px;
+  color: #d7dbe0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 10px;
+}
+.scope-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+.scope-row input { accent-color: #7ee787; width: 16px; height: 16px; }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+@media (min-width: 560px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+.perm-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; }
+.perm-row input { accent-color: #7ee787; width: 15px; height: 15px; }
+.output {
+  background: #0a0c0e;
+  border: 1px solid #2a2f36;
+  border-radius: 4px;
+  padding: 14px;
+  font-size: 13px;
+  color: #7ee787;
+  word-break: break-all;
+  margin-top: 12px;
+}
+.btn {
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  margin-right: 8px;
+  margin-top: 12px;
+}
+.btn.secondary { background: #21262d; border: 1px solid #2a2f36; }
+article { font-size: 13px; color: #a9b1bb; margin-top: 30px; }
+article h2 { font-size: 15px; color: #58a6ff; margin: 20px 0 8px 0; }
+article p { margin-bottom: 10px; }
+footer { text-align: center; font-size: 11px; color: #4a5158; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Discord Bot Invite Link Generator</h1>
+<p class="subtitle">Enter your client ID, pick scopes and permissions, and get a ready-to-share invite link.</p>
+
+<div class="panel">
+<h2>1. Client ID</h2>
+<input type="text" id="clientId" placeholder="123456789012345678">
+</div>
+
+<div class="panel">
+<h2>2. Scopes</h2>
+<div class="scope-row"><input type="checkbox" id="scopeBot" checked> bot</div>
+<div class="scope-row"><input type="checkbox" id="scopeCommands" checked> applications.commands</div>
+</div>
+
+<div class="panel">
+<h2>3. Permissions</h2>
+<div class="grid" id="permGrid"></div>
+</div>
+
+<div class="panel">
+<h2>4. Invite Link</h2>
+<button class="btn" id="generateBtn">Generate Link</button>
+<button class="btn secondary" id="copyBtn">Copy</button>
+<div class="output" id="output">Fill in a client ID above to generate a link.</div>
+</div>
+
+<article>
+<h2>What Each Part of the Link Does</h2>
+<p>The invite link tells Discord which application to add (client_id), what it is allowed to request (scope), and which permissions to pre-select in the authorization screen (permissions, as a single integer). The person adding your bot can still uncheck permissions before confirming, so this link sets sensible defaults rather than forcing access.</p>
+<h2>Where to Find Your Client ID</h2>
+<p>Your client ID is listed on the General Information page of your application in the Discord Developer Portal, right under the application name.</p>
+</article>
+
+<footer>Client-side tool. Nothing you enter here is stored or sent anywhere.</footer>
+</div>
+
+<script>
+var PERMS = [
+  ["Administrator", "8"],
+  ["Manage Server", "32"],
+  ["Manage Roles", "268435456"],
+  ["Manage Channels", "16"],
+  ["Kick Members", "2"],
+  ["Ban Members", "4"],
+  ["View Channels", "1024"],
+  ["Send Messages", "2048"],
+  ["Manage Messages", "8192"],
+  ["Embed Links", "16384"],
+  ["Attach Files", "32768"],
+  ["Read Message History", "65536"],
+  ["Mention Everyone", "131072"],
+  ["Use External Emojis", "262144"],
+  ["Connect (Voice)", "1048576"],
+  ["Speak (Voice)", "2097152"],
+  ["Manage Webhooks", "536870912"],
+  ["Use Application Commands", "2147483648"],
+  ["Moderate Members", "1099511627776"]
+];
+
+function buildGrid() {
+  var grid = document.getElementById('permGrid');
+  var html = '';
+  var i;
+  for (i = 0; i < PERMS.length; i++) {
+    html += '<label class="perm-row"><input type="checkbox" data-value="' + PERMS[i][1] + '" class="permCheck"> ' + PERMS[i][0] + '</label>';
+  }
+  grid.innerHTML = html;
+}
+
+function generateLink() {
+  var clientId = document.getElementById('clientId').value.trim();
+  var outputEl = document.getElementById('output');
+
+  if (!clientId || isNaN(Number(clientId))) {
+    outputEl.innerHTML = 'Enter a valid numeric client ID above.';
+    return;
+  }
+
+  var scopes = [];
+  if (document.getElementById('scopeBot').checked) { scopes.push('bot'); }
+  if (document.getElementById('scopeCommands').checked) { scopes.push('applications.commands'); }
+  if (scopes.length === 0) { scopes.push('bot'); }
+
+  var checks = document.getElementsByClassName('permCheck');
+  var total = BigInt(0);
+  var i;
+  for (i = 0; i < checks.length; i++) {
+    if (checks[i].checked) {
+      total = total + BigInt(checks[i].getAttribute('data-value'));
+    }
+  }
+
+  var url = 'https://discord.com/api/oauth2/authorize?client_id=' + clientId + '&permissions=' + total.toString() + '&scope=' + encodeURIComponent(scopes.join(' '));
+  outputEl.innerHTML = url;
+}
+
+function copyOutput() {
+  var text = document.getElementById('output').innerText || document.getElementById('output').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+  }
+}
+
+buildGrid();
+document.getElementById('generateBtn').addEventListener('click', generateLink);
+document.getElementById('copyBtn').addEventListener('click', copyOutput);
+</script>
+</body>
+</html>
